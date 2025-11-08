@@ -1,0 +1,277 @@
+/* 1. Design System using CSS Variables */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  
+  --color-primary: #007bff;
+  --color-primary-dark: #0056b3;
+  --color-success: #28a745;
+  --color-danger: #dc3545;
+  --color-warning: #ffc107;
+
+  --color-text: #212529;
+  --color-text-muted: #6c757d;
+  
+  --color-bg: #f8f9fa;
+  --color-bg-card: #ffffff;
+  
+  --border-color: #dee2e6;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+/* 2. Global Styles & Typography */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-family: var(--font-family-sans);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3. Auth Page Layout */
+.container-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--spacing-md);
+}
+
+main.auth-container { /* Renamed for clarity */
+  padding: var(--spacing-xl);
+  background: var(--color-bg-card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+main.auth-container h2 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.page-container {
+    padding: var(--spacing-lg);
+}
+
+/* 4. Form Styles */
+.auth-form {
+  display: grid;
+  gap: var(--spacing-md);
+  text-align: left;
+}
+
+.auth-form label {
+  display: grid;
+  gap: var(--spacing-sm);
+  font-weight: 500;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* 5. Button Styles */
+button {
+  cursor: pointer;
+  padding: 12px var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+button:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.auth-form button[type="submit"] {
+  width: 100%;
+}
+
+.toggle-auth {
+  margin-top: var(--spacing-md);
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.toggle-auth:hover {
+  text-decoration: underline;
+  background-color: transparent;
+  transform: none;
+}
+
+.error {
+  color: var(--color-danger);
+  margin-top: var(--spacing-md);
+  background-color: rgba(220, 53, 69, 0.1);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+}
+
+/* 6. Table Styles (Refreshed) */
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-bg-card);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  overflow: hidden; /* Ensures border-radius is respected by children */
+}
+
+.styled-table th,
+.styled-table td {
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+  text-align: left;
+}
+
+.styled-table th {
+  background-color: #f8f9fa; /* A slightly different shade for header */
+  font-weight: 600;
+}
+
+.styled-table tr:last-child td {
+  border-bottom: none;
+}
+
+.styled-table tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* 7. Status Badge Styles (Refreshed) */
+.status {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 100px; /* pill shape */
+  color: white;
+  text-transform: capitalize;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-pending { background-color: var(--color-warning); color: var(--color-text); }
+.status-approved { background-color: var(--color-success); }
+.status-denied { background-color: var(--color-danger); }
+
+/* Utility Button Styles */
+button.approve { background-color: var(--color-success); margin-right: 0.5rem; }
+button.deny { background-color: var(--color-danger); }
+
+
+/* 8. Navigation Bar Styles */
+.app-header {
+  background-color: var(--color-bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 var(--spacing-lg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+}
+
+.nav-link-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.user-info span {
+  color: var(--color-text-muted);
+}
+
+.user-info strong {
+  color: var(--color-text);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Specific style for logout button to make it less prominent */
+.logout-btn {
+  background-color: transparent;
+  color: var(--color-text-muted);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: var(--color-bg);
+  border-color: var(--border-color);
+  color: var(--color-text);
+  transform: none; /* Override default button hover transform */
+}

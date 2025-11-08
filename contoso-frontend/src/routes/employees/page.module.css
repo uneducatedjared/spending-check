@@ -1,0 +1,29 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.heading {
+  margin-bottom: var(--spacing-md);
+}
+
+.styledTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: transparent;
+}
+
+.styledTable th,
+.styledTable td {
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+  text-align: left;
+}
+
+.rowDivider {
+  border-top: 1px solid var(--border-color);
+}
+
+.actionsCell button {
+  margin: 0;
+}

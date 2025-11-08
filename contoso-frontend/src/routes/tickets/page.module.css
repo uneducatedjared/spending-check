@@ -1,0 +1,60 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  /* 6. Table Styles (Refreshed) */
+  .styledTable {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--color-bg-card);
+    box-shadow: var(--box-shadow);
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Ensures border-radius is respected by children */
+  }
+  
+  .styledTable th,
+  .styledTable td {
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+    text-align: left;
+  }
+  
+  .styledTable th {
+    background-color: #f8f9fa; /* A slightly different shade for header */
+    font-weight: 600;
+  }
+  
+  .styledTable tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .styledTable tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+  }
+  
+  /* 7. Status Badge Styles (Refreshed) */
+  .status {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 100px; /* pill shape */
+    color: white;
+    text-transform: capitalize;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .statusPending { background-color: var(--color-warning); color: var(--color-text); }
+  .statusApproved { background-color: var(--color-success); }
+  .statusDenied { background-color: var(--color-danger); }
+  
+  /* Utility Button Styles */
+  .approve { background-color: var(--color-success); margin-right: 0.5rem; }
+  .deny { background-color: var(--color-danger); }
+
+  /* Empty / placeholder cell alignment used by tickets table when no rows */
+  .emptyCell {
+    text-align: center;
+  }
+  
