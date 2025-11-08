@@ -1,43 +1,56 @@
-###
-# Production Dockerfile for contoso-backend
-# Uses Python 3.12 slim image, installs build/runtime deps, installs package from pyproject.toml,
-# copies sources, creates a non-root user and runs uvicorn.
-###
-
-FROM python:3.12-slim AS base
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+#
+# Production Dockerfile for contoso-backend using uv and multi-stage builds
+#
+# Stage 1: builder
+# - Uses the official astral/uv image to install dependencies into a virtual environment.
+# - This keeps build tools and dependencies out of the final production image.
+#
+FROM astral/uv:0.2.19-python3.12 AS builder
 
 WORKDIR /app
 
-# Install OS-level build deps required for some Python packages (e.g. asyncpg, passlib backends)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       gcc \
-       libpq-dev \
-       ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Copy only the dependency definition file first to leverage Docker's layer caching.
+COPY pyproject.toml uv.lock* ./
 
-# Copy project files first (pyproject) and sources so pip can build/install
-COPY pyproject.toml /app/
-COPY src/ /app/src/
+# Create a virtual environment and install dependencies into it.
+# --system-site-packages allows the venv to access system-level packages if needed.
+RUN uv venv --seed && \
+    uv sync --no-cache --require-hashes -p .venv
 
-# Upgrade pip and install the package declared in pyproject (project.dependencies)
-RUN pip install --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir .
+#
+# Stage 2: final
+# - Uses a slim Python base image for a smaller footprint.
+# - Copies the virtual environment from the builder stage.
+# - Creates a non-root user for security.
+# - Copies the application source code.
+#
+FROM python:3.12-slim AS final
 
-# Create a non-root user and make sure /app is owned
-RUN useradd --create-home --shell /bin/bash appuser \
-    && chown -R appuser:appuser /app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+# Add the virtual environment's scripts directory to the PATH.
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
+WORKDIR /app
+
+# Install runtime OS dependencies required by packages like asyncpg.
+# Using --no-install-recommends keeps the image lean.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the virtual environment with all installed packages from the builder stage.
+COPY --from=builder /app/.venv .venv
+
+# Create a non-root user for running the application.
+RUN useradd --create-home --shell /bin/bash appuser
+COPY --chown=appuser:appuser src/ ./src/
+
+# Switch to the non-root user.
 USER appuser
 
 EXPOSE 8000
 
-# Recommended environment variable: the app reads settings from envs (e.g. database URL)
-ENV MODERN_API_BASE_URL=http://0.0.0.0:8000
-
-# Production command - expose proxy headers and bind to 0.0.0.0
+# Production command to run the application using uvicorn.
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

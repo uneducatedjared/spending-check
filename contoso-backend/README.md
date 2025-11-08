@@ -1,173 +1,99 @@
-# Contoso Backend
+# Contoso 费用报销系统
 
-这个仓库包含 Contoso 应用的后端服务（FastAPI）。此文档概述项目架构、主要目录、运行方式、环境变量、认证流程及常见故障排查建议。
+欢迎来到 Contoso 费用报销系统项目！这是一个全栈 Web 应用，包括一个使用 FastAPI 构建的 Python 后端和一个使用 Modern.js (React) 构建的前端。
 
-## 目录结构（简要）
+- **`contoso-backend/`**: 后端 API 服务，负责处理业务逻辑、用户认证和数据存储。
+- **`contoso-frontend/`**: 前端 Web 应用，提供用户交互界面。
 
-- `pyproject.toml` - 项目依赖与元数据。
-- `src/` - 后端源码根目录。
-  - `main.py` - FastAPI 应用入口，包含中间件、路由注册和启动时行为（例如自动创建 DB 表）。
-  - `config/`
-    - `config.py` - 配置/环境变量读取（pydantic settings）。
-    - `database.py` - SQLAlchemy 异步 engine / session 配置。
-  - `endpoints/` - 路由声明（FastAPI routers）：
-    - `auth.py` - 认证/注册相关接口。
-    - `tickets.py` - 报销 Ticket 相关接口。
-    - `employees.py` - 员工管理接口（仅雇主可见）。
-  - `models/` - SQLAlchemy ORM 模型定义（User, Ticket 等）。
-  - `repository/` - 与 DB 的 CRUD 封装（async SQLAlchemy session）。
-  - `schemas/` - Pydantic 请求/响应模型（校验层）。
-  - `services/` - 业务逻辑（例如 `auth.py`, `user_service.py`, ticket/employee 服务），将路由和 repository 解耦。
-  - `utils/` - 通用工具（例如统一响应格式）。
+---
 
-## 高层架构与设计原则
+## 快速开始：使用 Docker Compose (推荐)
 
-- 路由（endpoints）仅负责 HTTP 层：解析请求、返回统一响应、捕获异常。业务逻辑放在 `services` 中。
-- 数据访问集中在 `repository/crud.py`，使用 SQLAlchemy 的 `AsyncSession`。
-- 配置使用 pydantic settings（在 `config/config.py`），通过环境变量注入运行时配置（数据库 URL、密钥等）。
-- 认证使用 JWT（`python-jose`），密码使用 Passlib + Argon2 存储与验证。
-- 错误处理：FastAPI 的 `HTTPException` 被统一异常处理器拦截并返回统一结构（见 `main.py` 的 handler）。
+这是启动完整本地开发环境最简单、最快捷的方式。它会同时启动后端 API、前端应用以及一个 PostgreSQL 数据库。
 
-## 关键流程 — 注册 / 登录（register_or_login）
+### 前提条件
 
-1. 前端提交 `email` 和 `password`（本项目前端使用单按钮“Login / Register”流程）：
-   - 后端首先查找用户（通过 `crud.get_user_by_email`）。
-   - 如果用户存在：
-     - 检查 `is_suspended`，若被封禁返回 403。
-     - 使用 `passlib` 验证密码；验证失败返回 400（错误密码）。
-     - 验证通过则生成 JWT 并返回（`access_token` + 用户信息）。
-   - 如果用户不存在：
-     - 服务期望前端在第二步提供 `username` 和 `role`（`employee` 或 `employer`）。
-     - 如果 `username` 或 `role` 缺失，服务会返回 404（`User not found`），提示前端收集更多信息。
-     - 一旦收集到 `username` 和 `role`，后端会对密码进行哈希（Argon2 via Passlib），创建用户并返回 token。
+- [Docker](https://www.docker.com/products/docker-desktop/) 已安装并正在运行。
 
-> 设计理由：后端不允许把 `username` 或 `role` 写为 NULL（数据库列为 NOT NULL）。因此，若缺少这些注册字段，应在后端明确拒绝并要求前端补齐信息，避免数据库完整性错误。
+### 设置步骤
 
-## 配置与运行（开发）
+**1. 配置后端环境变量**
 
-先创建并激活 Python 虚拟环境，安装依赖：
+`docker-compose` 需要一些环境变量来连接数据库和配置应用。
 
-```powershell
+首先，复制示例 env 文件：
+
+# 在项目根目录运行
+cp contoso-backend/.env.db.example contoso-backend/.env.db
+cp contoso-backend/.env.example contoso-backend/.env然后，你可以根据需要修改 `contoso-backend/.env.db` 和 `contoso-backend/.env` 里的值，但默认配置已经可以工作了。
+
+**2. 启动服务**
+
+在项目根目录运行以下命令：
+
+docker compose up --build- `--build` 标志会确保在启动前构建最新的 Docker 镜像。
+- 首次启动可能需要一些时间来下载镜像和安装依赖。
+
+启动成功后，你可以通过以下地址访问应用：
+
+- **前端应用**: [http://localhost:8080](http://localhost:8080)
+- **后端 API 文档 (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+**3. 停止服务**
+
+当你完成开发时，按 `Ctrl + C`，然后运行以下命令来停止并移除容器：
+
+docker compose down---
+
+## 手动本地开发
+
+如果你希望独立运行前端或后端服务，请按照以下指南操作。
+
+### 运行后端 (FastAPI)
+
+后端使用 [uv](https://github.com/astral-sh/uv) 进行包和环境管理。
+
+**1. 环境设置**
+
+进入后端目录，使用 `uv` 创建并激活虚拟环境，然后安装依赖。
+
+# 进入后端目录
 cd contoso-backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -e .
-```
 
-运行开发服务器（使用 uvicorn）：
+# 创建并激活虚拟环境
+uv venv
+.\.venv\Scripts\Activate.ps1  # Windows PowerShell
+# source .venv/bin/activate  # macOS / Linux / Git Bash
 
-```powershell
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-```
+# 使用 uv sync 安装依赖
+uv sync**2. 配置环境变量**
 
-重要环境变量（常见）：
-- `DATABASE_URL` - SQLAlchemy/AsyncPG 连接字符串，例如 `postgresql+asyncpg://user:pass@host:5432/dbname`。
-- `SECRET_KEY` - 用于 JWT 的签名密钥。
-- `ACCESS_TOKEN_EXPIRE_MINUTES` - token 过期时间（分钟）。
+在 `contoso-backend` 目录下创建一个 `.env` 文件，并填入必要的配置。你可以从 `.env.example` 复制。
 
-这些变量通常在 `config/config.py` 中被读取并封装为 `settings` 对象。
+# 至少需要包含以下内容
+DATABASE_URL="postgresql+asyncpg://user:password@localhost:5432/dbname"
+SECRET_KEY="your-secret-key"
+ACCESS_TOKEN_EXPIRE_MINUTES="60"> **提示**: 你需要一个本地运行的 PostgreSQL 数据库，并将连接信息填入 `DATABASE_URL`。使用 Docker 是运行数据库的最简单方式。
 
-## Docker（生产）
+**3. 运行开发服务器**
 
-仓库已包含一个示例 `Dockerfile`，用于构建生产镜像。构建并运行示例：
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000### 运行前端 (Modern.js)
 
-```powershell
-docker build -t contoso-backend:latest -f contoso-backend/Dockerfile contoso-backend
-docker run -it --rm -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:pass@db:5432/contoso" -e SECRET_KEY="..." contoso-backend:latest
-```
+前端使用 `pnpm` 作为包管理器。
 
-推荐使用 `docker-compose` 在本地配合 Postgres 一起运行（我可以为你添加 docker-compose 文件）。
+**1. 环境设置**
 
-## 数据库与迁移
+进入前端目录并安装依赖。
 
-当前代码在 `startup` 事件中使用 SQLAlchemy 的 `Base.metadata.create_all` 自动创建表（便于快速启动）。如果你计划长期维护或演进 schema，建议引入 Alembic 来做结构化迁移：
+# 进入前端目录
+cd contoso-frontend
 
-- 安装并初始化 Alembic，新建 migration 脚本并在 CI 中执行迁移步骤（或在容器启动时运行 `alembic upgrade head`）。
+# 安装依赖
+pnpm install**2. 配置环境变量**
 
-## 调试与常见问题
+在 `contoso-frontend` 目录下创建一个 `.env` 文件，指定后端 API 的地址。
 
-- IntegrityError: null value in column "username" - 原因是尝试在没有 `username` 的情况下创建用户（数据库约束）。修复方法：确保前端在注册请求中提供 `username` 和 `role`，或按当前实现让后端返回 404 并由前端收集额外信息后再次提交。
-- 连接到数据库失败：检查 `DATABASE_URL` 、网络、Postgres 是否允许连接以及 `libpq-dev` 是否已安装（容器或本地）。
-- 密码验证失败：确保密码哈希与验证策略一致（后端使用 Argon2 via Passlib），前端**不应**在客户端重复哈希密码后再发给后端，除非后端期望接收预哈希值。
+# .env 文件内容
+API_BASE_URL=http://localhost:8000**3. 运行开发服务器**
 
-## 本地运行与部署流程
-
-下面给出常用的本地开发与部署流程，包含虚拟环境、本地启动、Docker 镜像构建以及使用 docker-compose 启动（含 Postgres）的示例命令。命令示例以 PowerShell 为主（Windows）。
-
-### 本地开发（虚拟环境）
-
-1. 创建并激活虚拟环境，安装依赖：
-
-```powershell
-cd contoso-backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -e .
-```
-
-2. 设置环境变量（开发时可创建 `.env` 或在 shell 中导出）：
-
-```powershell
-# 示例（仅在当前 PowerShell 会话有效）
-$env:DATABASE_URL = "postgresql+asyncpg://contoso:changeme@localhost:5432/contoso_db"
-$env:SECRET_KEY = "replace_with_secure_key"
-$env:ACCESS_TOKEN_EXPIRE_MINUTES = "60"
-```
-
-3. 运行开发服务器（自动热重载）：
-
-```powershell
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-> 注意：开发模式下我们使用 `Base.metadata.create_all` 在 `startup` 事件创建表，适合快速开发；生产请使用 Alembic 做结构化迁移。
-
-### 使用 Docker 本地运行（单镜像）
-
-构建镜像：
-
-```powershell
-docker build -t contoso-backend:latest -f contoso-backend/Dockerfile contoso-backend
-```
-
-运行镜像（示例，传入数据库与密钥）：
-
-```powershell
-docker run -it --rm -p 8000:8000 `
-  -e DATABASE_URL="postgresql+asyncpg://contoso:changeme@host:5432/contoso_db" `
-  -e SECRET_KEY="replace_this_with_secure_key" `
-  contoso-backend:latest
-```
-
-### 使用 docker-compose（Postgres + Backend）
-
-已在仓库根提供 `docker-compose.yml`，示例启动：
-
-1. 在 `contoso-backend/.env.db` 中设置数据库变量（不要提交真实凭据）：
-
-```text
-POSTGRES_USER=contoso
-POSTGRES_PASSWORD=change_this_password
-POSTGRES_DB=contoso_db
-```
-
-2. 启动服务：
-
-```powershell
-docker compose up -d
-```
-
-3. 查看日志：
-
-```powershell
-docker compose logs -f backend
-docker compose logs -f db
-```
-
-4. 停止并移除容器：
-
-```powershell
-docker compose down
-```
+pnpm dev服务器启动后，你可以在 [http://localhost:8080](http://localhost:8080) 访问前端页面。
