@@ -90,3 +90,84 @@ docker run -it --rm -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:pass
 - IntegrityError: null value in column "username" - 原因是尝试在没有 `username` 的情况下创建用户（数据库约束）。修复方法：确保前端在注册请求中提供 `username` 和 `role`，或按当前实现让后端返回 404 并由前端收集额外信息后再次提交。
 - 连接到数据库失败：检查 `DATABASE_URL` 、网络、Postgres 是否允许连接以及 `libpq-dev` 是否已安装（容器或本地）。
 - 密码验证失败：确保密码哈希与验证策略一致（后端使用 Argon2 via Passlib），前端**不应**在客户端重复哈希密码后再发给后端，除非后端期望接收预哈希值。
+
+## 本地运行与部署流程
+
+下面给出常用的本地开发与部署流程，包含虚拟环境、本地启动、Docker 镜像构建以及使用 docker-compose 启动（含 Postgres）的示例命令。命令示例以 PowerShell 为主（Windows）。
+
+### 本地开发（虚拟环境）
+
+1. 创建并激活虚拟环境，安装依赖：
+
+```powershell
+cd contoso-backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -e .
+```
+
+2. 设置环境变量（开发时可创建 `.env` 或在 shell 中导出）：
+
+```powershell
+# 示例（仅在当前 PowerShell 会话有效）
+$env:DATABASE_URL = "postgresql+asyncpg://contoso:changeme@localhost:5432/contoso_db"
+$env:SECRET_KEY = "replace_with_secure_key"
+$env:ACCESS_TOKEN_EXPIRE_MINUTES = "60"
+```
+
+3. 运行开发服务器（自动热重载）：
+
+```powershell
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+> 注意：开发模式下我们使用 `Base.metadata.create_all` 在 `startup` 事件创建表，适合快速开发；生产请使用 Alembic 做结构化迁移。
+
+### 使用 Docker 本地运行（单镜像）
+
+构建镜像：
+
+```powershell
+docker build -t contoso-backend:latest -f contoso-backend/Dockerfile contoso-backend
+```
+
+运行镜像（示例，传入数据库与密钥）：
+
+```powershell
+docker run -it --rm -p 8000:8000 `
+  -e DATABASE_URL="postgresql+asyncpg://contoso:changeme@host:5432/contoso_db" `
+  -e SECRET_KEY="replace_this_with_secure_key" `
+  contoso-backend:latest
+```
+
+### 使用 docker-compose（Postgres + Backend）
+
+已在仓库根提供 `docker-compose.yml`，示例启动：
+
+1. 在 `contoso-backend/.env.db` 中设置数据库变量（不要提交真实凭据）：
+
+```text
+POSTGRES_USER=contoso
+POSTGRES_PASSWORD=change_this_password
+POSTGRES_DB=contoso_db
+```
+
+2. 启动服务：
+
+```powershell
+docker compose up -d
+```
+
+3. 查看日志：
+
+```powershell
+docker compose logs -f backend
+docker compose logs -f db
+```
+
+4. 停止并移除容器：
+
+```powershell
+docker compose down
+```
